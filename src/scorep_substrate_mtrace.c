@@ -27,10 +27,8 @@ static void substrate_mtrace_set_callbacks(
 
 static char* env_metrics;
 
-/* Called when MPP is initialized (e.g., when MPI_Init() is called) or after init when no MPP is used */
-static void substrate_mtrace_init_mpp(void)
+static void substrate_mtrace_start(int own_rank)
 {
-    /* Get the metrics from env. variable */
     env_metrics = getenv(PREFIX"_FILE");
     if (env_metrics)
     {
@@ -49,11 +47,35 @@ static void substrate_mtrace_init_mpp(void)
 
     }
     mtrace();
+
+}
+
+/* Called when MPP is initialized (e.g., when MPI_Init() is called) or after init when no MPP is used */
+static void substrate_mtrace_init_mpp(void)
+{
+    /* Get the metrics from env. variable */
+
+    env_metrics = getenv(PREFIX"_EARLY");
+    if (!env_metrics)
+    {
+        substrate_mtrace_start(callbacks->SCOREP_Ipc_GetRank());
+    }
+}
+
+/* Called when MPP is initialized (e.g., when MPI_Init() is called) or after init when no MPP is used */
+static int substrate_mtrace_init(void)
+{
+    /* Get the metrics from env. variable */
+    env_metrics = getenv(PREFIX"_EARLY");
+    if (env_metrics)
+    {
+        substrate_mtrace_start(0);
+    }
+    return 0;
 }
 
 static void substrate_mtrace_finalize()
 {
-    muntrace();
     // copy memory mapping
     FILE* in = fopen("/proc/self/maps", "r");
     if (in == NULL)
@@ -63,7 +85,6 @@ static void substrate_mtrace_finalize()
     }
     char buffer[512];
     sprintf(buffer, "%s.maps", env_metrics);
-    printf("%s\n", buffer);
     FILE* out = fopen(buffer, "w");
     if (out == NULL)
     {
@@ -78,11 +99,10 @@ static void substrate_mtrace_finalize()
     do
     {
         read = fread(data, 1, 4096, in);
-        printf("%s", data);
         write = fwrite(data, 1, read, out);
         if (write < read)
         {
-            fprintf(stderr, "An error occured while writing %s %d/%d\n", buffer,
+            fprintf(stderr, "An error occured while writing %s %zu/%zu\n", buffer,
                     write, read);
             break;
         }
@@ -105,6 +125,7 @@ SCOREP_SUBSTRATE_PLUGIN_ENTRY (mtrace)
     SCOREP_SubstratePluginInfo info;
     memset(&info, 0, sizeof(SCOREP_SubstratePluginInfo));
     info.plugin_version = SCOREP_SUBSTRATE_PLUGIN_VERSION;
+    info.init = substrate_mtrace_init;
     info.init_mpp = substrate_mtrace_init_mpp;
     info.finalize = substrate_mtrace_finalize;
     info.set_callbacks = substrate_mtrace_set_callbacks;
