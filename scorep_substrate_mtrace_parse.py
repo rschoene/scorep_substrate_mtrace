@@ -68,9 +68,12 @@ def alloc_stat(mtrace_file):
 def parse_file(mtrace_file):
     reg_string='^0x([0-9a-f]+)\s+0x([0-9a-f]+)\s+at\s+0x([0-9a-f]+)$'
     re.compile(reg_string)
+    print('Parse')
     proc = Popen(['mtrace', mtrace_file], stdout=PIPE)
     skip_line=True
+    print('Parse2')
     for line in proc.stdout:
+        print(line)
         if skip_line:
             if line.startswith('Memory not freed'):
                 skip_line=False
@@ -82,7 +85,7 @@ def parse_file(mtrace_file):
             size = int(m.group(2),16)
             caller_address = int(m.group(3),16)
             pos_caller=''
-            pos_addr=''
+            pos_addr=hex(address)
             for map in maps:
                 if address>map['start'] and address<map['end']:
                     abs_adr=hex(address-map['start'])
@@ -93,7 +96,7 @@ def parse_file(mtrace_file):
                     abs_adr=hex(caller_address-map['start'])
                     pos_caller=subprocess.check_output(['addr2line', '-e', map['symbol'], abs_adr ])
                     break
-            print( str(size)+' Bytes lost in '+(str(pos_caller)).strip()+' ->'+(str(pos_caller)).strip() )
+            print( str(size)+' Bytes lost in '+(str(pos_caller)).strip()+' ->'+(str(pos_addr)).strip() )
 
 if __name__ == '__main__':
     

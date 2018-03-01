@@ -33,12 +33,12 @@ static void substrate_mtrace_start(int own_rank)
     if (env_metrics)
     {
         char buffer[512];
-        sprintf(buffer, "%s.%d", env_metrics, callbacks->SCOREP_Ipc_GetRank());
+        sprintf(buffer, "%s.%d", env_metrics, own_rank);
         setenv("MALLOC_TRACE", buffer, 0);
         env_metrics = strdup(buffer);
     } else
     {
-        if (callbacks->SCOREP_Ipc_GetRank() == 0)
+        if (own_rank == 0)
             fprintf(stderr,
             PREFIX"_FILE is not set, $MALLOC_TRACE will be used\n");
         env_metrics = getenv("$MALLOC_TRACE");
@@ -55,7 +55,6 @@ static void substrate_mtrace_init_mpp(void)
 {
     /* Get the metrics from env. variable */
 
-    env_metrics = getenv(PREFIX"_EARLY");
     if (!env_metrics)
     {
         substrate_mtrace_start(callbacks->SCOREP_Ipc_GetRank());
