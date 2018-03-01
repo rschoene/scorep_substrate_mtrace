@@ -50,7 +50,7 @@ substrate_mtrace_init_mpp (void)
 
 
 /* define the plugin */
-SCOREP_SUBSTRATE_PLUGIN_ENTRY (print_metrics)
+SCOREP_SUBSTRATE_PLUGIN_ENTRY (mtrace)
 {
   SCOREP_SubstratePluginInfo info;
   memset (&info, 0, sizeof(SCOREP_SubstratePluginInfo));
